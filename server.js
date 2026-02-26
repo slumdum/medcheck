@@ -3,7 +3,13 @@ const fs = require("fs");
 const path = require("path");
 
 // ─── YOUR GEMINI API KEY ───────────────────────────────────────────────────────
-const GEMINI_API_KEY = "AIzaSyB2mFkRu8HpIlrmo-xNzcHu__vYeg663gA";
+// Load Gemini API key from Render environment variable
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+// Safety check
+if (!GEMINI_API_KEY) {
+  console.error("❌ Gemini API key missing. Check Render environment variables.");
+}
 // ──────────────────────────────────────────────────────────────────────────────
 
 const PORT = 3000;
