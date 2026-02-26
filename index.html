@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedCheck — Symptom Checker</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #4a90d9;
+    --primary-light: #e8f3fc;
+    --primary-dark: #2c6fad;
+    --accent: #f47b7b;
+    --accent-light: #fef0f0;
+    --green: #5cb85c;
+    --amber: #f5a623;
+    --amber-light: #fff8ec;
+    --bg: #f7f9fc;
+    --white: #ffffff;
+    --text: #2d3748;
+    --text-light: #718096;
+    --border: #e2e8f0;
+    --radius: 16px;
+    --shadow: 0 2px 16px rgba(74,144,217,0.08);
+    --shadow-hover: 0 6px 28px rgba(74,144,217,0.15);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: 'Nunito', sans-serif; font-size: 17px; line-height: 1.6; min-height: 100vh; }
+
+  .topbar { background: var(--white); border-bottom: 2px solid var(--primary-light); padding: 1rem 2rem; display: flex; align-items: center; gap: 0.75rem; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .topbar-logo { font-family: 'Lora', serif; font-size: 1.5rem; font-weight: 600; color: var(--primary-dark); }
+  .topbar-logo span { color: var(--accent); }
+  .topbar-tag { font-size: 0.75rem; background: var(--primary-light); color: var(--primary-dark); padding: 0.2rem 0.6rem; border-radius: 20px; font-weight: 700; }
+
+  .main { max-width: 720px; margin: 0 auto; padding: 2rem 1.25rem 5rem; }
+
+  .hero { background: linear-gradient(135deg, var(--primary) 0%, #6ab4f5 100%); border-radius: var(--radius); padding: 2.5rem 2rem; text-align: center; color: white; margin-bottom: 1.75rem; position: relative; overflow: hidden; animation: fadeUp 0.5s ease both; }
+  .hero::before { content: ''; position: absolute; top: -40px; right: -40px; width: 180px; height: 180px; border-radius: 50%; background: rgba(255,255,255,0.08); }
+  .hero::after { content: ''; position: absolute; bottom: -60px; left: -30px; width: 220px; height: 220px; border-radius: 50%; background: rgba(255,255,255,0.06); }
+  .hero-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+  .hero h1 { font-family: 'Lora', serif; font-size: 1.9rem; font-weight: 600; margin-bottom: 0.5rem; position: relative; }
+  .hero p { font-size: 1rem; opacity: 0.92; max-width: 480px; margin: 0 auto; position: relative; }
+
+  .card { background: var(--white); border-radius: var(--radius); border: 1.5px solid var(--border); margin-bottom: 1.5rem; box-shadow: var(--shadow); overflow: hidden; animation: fadeUp 0.5s ease both; transition: box-shadow 0.2s, border-color 0.2s; }
+  .card:hover { box-shadow: var(--shadow-hover); border-color: #c5dff7; }
+  .card:nth-child(2){animation-delay:0.05s}.card:nth-child(3){animation-delay:0.1s}.card:nth-child(4){animation-delay:0.15s}.card:nth-child(5){animation-delay:0.2s}.card:nth-child(6){animation-delay:0.25s}
+  .card-header { padding: 1rem 1.5rem; border-bottom: 1.5px solid var(--border); display: flex; align-items: center; gap: 0.6rem; background: var(--primary-light); }
+  .card-header-icon { font-size: 1.3rem; width: 36px; height: 36px; background: var(--white); border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(74,144,217,0.15); flex-shrink: 0; }
+  .card-header-title { font-size: 1rem; font-weight: 800; color: var(--primary-dark); }
+  .card-header-sub { font-size: 0.75rem; color: var(--text-light); margin-top: 0.1rem; }
+  .card-body { padding: 1.5rem; }
+
+  .upload-zone { border: 2.5px dashed #c5dff7; border-radius: 12px; padding: 2.5rem 1.5rem; text-align: center; cursor: pointer; background: var(--primary-light); transition: all 0.2s; }
+  .upload-zone:hover, .upload-zone.drag-over { border-color: var(--primary); background: #ddeeff; }
+  .upload-zone-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+  .upload-zone-title { font-size: 1.05rem; font-weight: 700; color: var(--primary-dark); margin-bottom: 0.3rem; }
+  .upload-zone-sub { font-size: 0.85rem; color: var(--text-light); }
+  #file-input { display: none; }
+  .upload-preview { display: none; margin-top: 1rem; background: var(--primary-light); border: 1.5px solid #c5dff7; border-radius: 12px; padding: 1rem; align-items: center; gap: 1rem; }
+  .upload-preview.show { display: flex; }
+  .preview-img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; border: 2px solid var(--border); flex-shrink: 0; }
+  .preview-info { flex: 1; }
+  .preview-name { font-weight: 700; color: var(--text); font-size: 0.9rem; word-break: break-all; }
+  .preview-size { font-size: 0.78rem; color: var(--text-light); margin-top: 0.15rem; }
+  .btn-remove { background: none; border: 1.5px solid var(--accent); color: var(--accent); font-family: 'Nunito', sans-serif; font-size: 0.8rem; font-weight: 700; padding: 0.25rem 0.75rem; border-radius: 20px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn-remove:hover { background: var(--accent-light); }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+  .required::after { content: ' *'; color: var(--accent); }
+  .field-hint { font-size: 0.78rem; color: var(--text-light); margin-top: -0.1rem; }
+  input[type="text"], input[type="number"], select, textarea { background: var(--bg); border: 2px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'Nunito', sans-serif; font-size: 1rem; padding: 0.65rem 0.9rem; outline: none; width: 100%; transition: border-color 0.2s, box-shadow 0.2s; -webkit-appearance: none; }
+  input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(74,144,217,0.15); background: var(--white); }
+  select { cursor: pointer; }
+  textarea { resize: vertical; min-height: 90px; }
+
+  .severity-wrapper { background: var(--bg); border: 2px solid var(--border); border-radius: 10px; padding: 1rem; }
+  .severity-display { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; }
+  .severity-number { font-size: 2.2rem; font-weight: 800; color: var(--primary); min-width: 2.5rem; line-height: 1; transition: color 0.3s; }
+  .severity-label { font-size: 0.9rem; font-weight: 700; color: var(--text-light); transition: color 0.3s; }
+  input[type="range"] { -webkit-appearance: none; width: 100%; height: 8px; border-radius: 4px; background: #e2e8f0; border: none; padding: 0; cursor: pointer; outline: none; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: var(--primary); box-shadow: 0 2px 8px rgba(74,144,217,0.4); cursor: pointer; border: 3px solid white; transition: background 0.3s; }
+  .severity-faces { display: flex; justify-content: space-between; margin-top: 0.5rem; }
+  .severity-face { font-size: 1.4rem; text-align: center; flex: 1; opacity: 0.35; transition: opacity 0.2s, transform 0.2s; }
+  .severity-face.active { opacity: 1; transform: scale(1.2); }
+
+  .symptoms-note { font-size: 0.85rem; color: var(--text-light); margin-bottom: 1rem; background: var(--primary-light); padding: 0.6rem 0.9rem; border-radius: 8px; border-left: 3px solid var(--primary); }
+  .symptoms-grid { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+  .symptom-tag { background: var(--bg); border: 2px solid var(--border); border-radius: 20px; color: var(--text); font-family: 'Nunito', sans-serif; font-size: 0.9rem; font-weight: 600; padding: 0.45rem 1rem; cursor: pointer; transition: all 0.15s; user-select: none; display: flex; align-items: center; gap: 0.35rem; }
+  .symptom-tag:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+  .symptom-tag.active { background: var(--primary); border-color: var(--primary); color: white; box-shadow: 0 2px 10px rgba(74,144,217,0.3); }
+  .symptom-tag .check { display: none; }
+  .symptom-tag.active .check { display: inline; }
+  .selected-count { margin-top: 1rem; font-size: 0.85rem; color: var(--primary-dark); font-weight: 700; background: var(--primary-light); display: inline-block; padding: 0.3rem 0.85rem; border-radius: 20px; }
+
+  .card.disclaimer { border-color: #fde68a; }
+  .card.disclaimer .card-header { background: var(--amber-light); border-color: #fde68a; }
+  .card.disclaimer .card-header-title { color: #92400e; }
+  .disclaimer-box { background: var(--amber-light); border: 2px solid #fde68a; border-radius: 12px; padding: 1.25rem 1.25rem 1.25rem 1rem; border-left: 5px solid var(--amber); }
+  .disclaimer-main { font-size: 1rem; font-weight: 700; color: #78350f; margin-bottom: 0.75rem; }
+  .disclaimer-points { display: flex; flex-direction: column; gap: 0.55rem; }
+  .disclaimer-point { display: flex; gap: 0.6rem; font-size: 0.9rem; color: #92400e; align-items: flex-start; }
+  .disclaimer-point-icon { flex-shrink: 0; margin-top: 0.05rem; }
+  .emergency-box { margin-top: 1rem; background: #fef2f2; border: 2px solid #fca5a5; border-radius: 10px; padding: 0.9rem 1rem; display: flex; align-items: center; gap: 0.75rem; font-size: 0.9rem; font-weight: 700; color: #991b1b; }
+
+  .submit-area { text-align: center; padding: 0.5rem 0 1rem; }
+  .btn-submit { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); border: none; border-radius: 50px; color: white; font-family: 'Nunito', sans-serif; font-size: 1.15rem; font-weight: 800; padding: 1rem 3rem; cursor: pointer; box-shadow: 0 4px 20px rgba(74,144,217,0.4); transition: all 0.2s; width: 100%; max-width: 360px; }
+  .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(74,144,217,0.45); }
+  .btn-submit:active { transform: translateY(0); }
+  .submit-note { font-size: 0.8rem; color: var(--text-light); margin-top: 0.75rem; }
+
+  .card.chat-panel { display: none; }
+  .card.chat-panel.show { display: block; }
+  .chat-messages { height: 380px; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; background: var(--bg); scroll-behavior: smooth; }
+  .chat-messages::-webkit-scrollbar { width: 5px; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .msg { max-width: 82%; animation: fadeUp 0.3s ease; }
+  .msg-ai { align-self: flex-start; }
+  .msg-ai .msg-name { font-size: 0.72rem; font-weight: 700; color: var(--primary); margin-bottom: 0.3rem; }
+  .msg-ai .msg-bubble { background: var(--white); border: 1.5px solid var(--border); border-radius: 0 16px 16px 16px; padding: 0.85rem 1.1rem; font-size: 0.95rem; line-height: 1.65; color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .msg-user { align-self: flex-end; }
+  .msg-user .msg-name { font-size: 0.72rem; font-weight: 700; color: var(--text-light); text-align: right; margin-bottom: 0.3rem; }
+  .msg-user .msg-bubble { background: var(--primary); border-radius: 16px 0 16px 16px; padding: 0.85rem 1.1rem; font-size: 0.95rem; color: white; line-height: 1.65; box-shadow: 0 2px 10px rgba(74,144,217,0.3); }
+  .typing-dots span { display: inline-block; width: 7px; height: 7px; background: var(--text-light); border-radius: 50%; margin: 0 2px; animation: dot-bounce 1.2s infinite; }
+  .typing-dots span:nth-child(2){animation-delay:0.2s}.typing-dots span:nth-child(3){animation-delay:0.4s}
+  .chat-input-area { padding: 1rem; border-top: 1.5px solid var(--border); display: flex; gap: 0.6rem; align-items: center; background: var(--white); }
+  #chat-input { flex: 1; border: 2px solid var(--border); border-radius: 50px; padding: 0.65rem 1.1rem; font-size: 0.95rem; }
+  #chat-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(74,144,217,0.12); }
+  .btn-send { background: var(--primary); border: none; border-radius: 50%; width: 44px; height: 44px; color: white; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0; box-shadow: 0 2px 10px rgba(74,144,217,0.3); }
+  .btn-send:hover { background: var(--primary-dark); transform: scale(1.05); }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes dot-bounce { 0%,80%,100% { transform: translateY(0); opacity: 0.4; } 40% { transform: translateY(-6px); opacity: 1; } }
+
+  @media (max-width: 560px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .form-group.full { grid-column: 1; }
+    .hero h1 { font-size: 1.5rem; }
+    body { font-size: 16px; }
+    .topbar { padding: 0.75rem 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">Med<span>Check</span></div>
+  <div class="topbar-tag">AI Symptom Checker</div>
+</div>
+
+<div class="main">
+
+  <div class="hero">
+    <div class="hero-icon">🩺</div>
+    <h1>Hello! How are you feeling today?</h1>
+    <p>Fill in a few simple details about your symptoms and our AI assistant will help guide you. It's quick, safe, and easy.</p>
+  </div>
+
+  <!-- IMAGE UPLOAD -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-icon">📷</div>
+      <div>
+        <div class="card-header-title">Upload a Photo (Optional)</div>
+        <div class="card-header-sub">A picture of a rash, swelling, or visible symptom helps us assist you better</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+        <div class="upload-zone-icon">🖼️</div>
+        <div class="upload-zone-title">Tap here to upload a photo</div>
+        <div class="upload-zone-sub">JPG, PNG or WEBP · Max 10MB</div>
+      </div>
+      <input type="file" id="file-input" accept="image/*">
+      <div class="upload-preview" id="upload-preview">
+        <img id="preview-img" class="preview-img" src="" alt="Preview">
+        <div class="preview-info">
+          <div class="preview-name" id="preview-name"></div>
+          <div class="preview-size" id="preview-size"></div>
+        </div>
+        <button class="btn-remove" onclick="removeImage()">✕ Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PATIENT DETAILS -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-icon">👤</div>
+      <div>
+        <div class="card-header-title">Your Details</div>
+        <div class="card-header-sub">Fields marked with * are required</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="required" for="age">Age</label>
+          <input type="number" id="age" min="1" max="120" placeholder="e.g. 45">
+        </div>
+        <div class="form-group">
+          <label class="required" for="gender">Gender</label>
+          <select id="gender">
+            <option value="">Select…</option>
+            <option>Female</option>
+            <option>Male</option>
+            <option>Non-binary</option>
+            <option>Prefer not to say</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label class="required" for="duration">How long have you had these symptoms?</label>
+          <select id="duration">
+            <option value="">Select…</option>
+            <option>Less than 24 hours</option>
+            <option>1–3 days</option>
+            <option>4–7 days</option>
+            <option>1–2 weeks</option>
+            <option>2–4 weeks</option>
+            <option>More than 1 month</option>
+            <option>Long-term / recurring</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label class="required">How bad does it feel? <span style="font-weight:400;color:var(--text-light)">(1 = very mild · 10 = very severe)</span></label>
+          <div class="severity-wrapper">
+            <div class="severity-display">
+              <div class="severity-number" id="severity-num">5</div>
+              <div class="severity-label" id="severity-label">Moderate</div>
+            </div>
+            <input type="range" id="severity" min="1" max="10" value="5" oninput="updateSeverity(this.value)">
+            <div class="severity-faces">
+              <div class="severity-face" id="face-1">😊</div>
+              <div class="severity-face" id="face-2">😐</div>
+              <div class="severity-face active" id="face-3">😟</div>
+              <div class="severity-face" id="face-4">😢</div>
+            </div>
+          </div>
+        </div>
+        <div class="form-group full">
+          <label for="medications">Current Medicines (if any)</label>
+          <div class="field-hint">Any tablets, syrups, or injections you are currently taking</div>
+          <input type="text" id="medications" placeholder="e.g. Paracetamol, Blood pressure tablets…">
+        </div>
+        <div class="form-group full">
+          <label for="allergies">Known Allergies (if any)</label>
+          <div class="field-hint">Any medicines, foods, or materials you are allergic to</div>
+          <input type="text" id="allergies" placeholder="e.g. Penicillin, Peanuts, Latex…">
+        </div>
+        <div class="form-group full">
+          <label for="additional">Anything else to share? <span style="font-weight:400;color:var(--text-light)">(optional)</span></label>
+          <textarea id="additional" placeholder="Describe your symptoms in your own words, or share any other health details that might help…"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUICK SYMPTOMS -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-icon">✅</div>
+      <div>
+        <div class="card-header-title">What symptoms do you have?</div>
+        <div class="card-header-sub">Tap everything that applies to you</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="symptoms-note">👇 Just tap to select. Tap again to remove.</div>
+      <div class="symptoms-grid" id="symptoms-grid"></div>
+      <div class="selected-count" id="selected-count">None selected yet</div>
+    </div>
+  </div>
+
+  <!-- DISCLAIMER -->
+  <div class="card disclaimer">
+    <div class="card-header">
+      <div class="card-header-icon">⚠️</div>
+      <div>
+        <div class="card-header-title">Important Notice</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="disclaimer-box">
+        <div class="disclaimer-main">🩺 This tool is not a replacement for a real doctor.</div>
+        <div class="disclaimer-points">
+          <div class="disclaimer-point"><span class="disclaimer-point-icon">•</span><span>Always visit or call a qualified doctor or healthcare provider for any health concern, no matter how small.</span></div>
+          <div class="disclaimer-point"><span class="disclaimer-point-icon">•</span><span>This AI can suggest possibilities, but it cannot diagnose or prescribe treatment for you.</span></div>
+          <div class="disclaimer-point"><span class="disclaimer-point-icon">•</span><span>Never delay seeking professional care because of something this tool says.</span></div>
+          <div class="disclaimer-point"><span class="disclaimer-point-icon">•</span><span>For children and elderly patients especially, please consult a doctor in person as soon as possible.</span></div>
+        </div>
+      </div>
+      <div class="emergency-box">🚨 <span>If this is a medical emergency — call <strong>emergency services immediately</strong> (911, 112, 108 or your local number).</span></div>
+    </div>
+  </div>
+
+  <!-- SUBMIT -->
+  <div class="submit-area">
+    <button class="btn-submit" onclick="submitForm()">🔍 Check My Symptoms</button>
+    <div class="submit-note">🔒 Your information is kept private and secure</div>
+  </div>
+
+  <!-- CHAT PANEL -->
+  <div class="card chat-panel" id="chat-panel">
+    <div class="card-header">
+      <div class="card-header-icon">🤖</div>
+      <div>
+        <div class="card-header-title">MedCheck AI Assistant</div>
+        <div class="card-header-sub">Ask any follow-up questions below</div>
+      </div>
+    </div>
+    <div class="chat-messages" id="chat-messages"></div>
+    <div class="chat-input-area">
+      <input type="text" id="chat-input" placeholder="Type your question here…" onkeydown="if(event.key==='Enter') sendMessage()">
+      <button class="btn-send" onclick="sendMessage()" title="Send">➤</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SYMPTOMS = [
+  {emoji:'🤒',label:'Fever'},{emoji:'🤕',label:'Headache'},{emoji:'😴',label:'Fatigue'},
+  {emoji:'🤧',label:'Cough'},{emoji:'😮',label:'Sore throat'},{emoji:'🌬️',label:'Runny nose'},
+  {emoji:'🤢',label:'Nausea'},{emoji:'🤮',label:'Vomiting'},{emoji:'🚽',label:'Diarrhoea'},
+  {emoji:'💔',label:'Chest pain'},{emoji:'😮‍💨',label:'Breathlessness'},{emoji:'💫',label:'Dizziness'},
+  {emoji:'🔴',label:'Skin rash'},{emoji:'🦵',label:'Joint pain'},{emoji:'💪',label:'Muscle ache'},
+  {emoji:'🥶',label:'Chills'},{emoji:'🍽️',label:'Loss of appetite'},{emoji:'🫁',label:'Stomach pain'},
+  {emoji:'🔙',label:'Back pain'},{emoji:'👀',label:'Blurred vision'},{emoji:'👂',label:'Ear pain'},
+  {emoji:'😴',label:'Trouble sleeping'},{emoji:'🤸',label:'Weakness'},{emoji:'❤️',label:'Heart racing'},
+  {emoji:'💧',label:'Excessive thirst'},{emoji:'😬',label:'Anxiety'}
+];
+
+const selected = new Set();
+
+function buildSymptomTags() {
+  const grid = document.getElementById('symptoms-grid');
+  SYMPTOMS.forEach(s => {
+    const tag = document.createElement('div');
+    tag.className = 'symptom-tag';
+    tag.innerHTML = `<span class="check">✓</span>${s.emoji} ${s.label}`;
+    tag.onclick = () => toggleSymptom(tag, s.label);
+    grid.appendChild(tag);
+  });
+}
+
+function toggleSymptom(el, label) {
+  if (selected.has(label)) { selected.delete(label); el.classList.remove('active'); }
+  else { selected.add(label); el.classList.add('active'); }
+  const c = selected.size;
+  document.getElementById('selected-count').textContent = c === 0 ? 'None selected yet' : `${c} symptom${c>1?'s':''} selected`;
+}
+
+// Image upload
+const zone = document.getElementById('upload-zone');
+const fileInput = document.getElementById('file-input');
+let uploadedFile = null;
+
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag-over'); const f = e.dataTransfer.files[0]; if(f && f.type.startsWith('image/')) handleFile(f); });
+fileInput.addEventListener('change', e => { if(e.target.files[0]) handleFile(e.target.files[0]); });
+
+function handleFile(f) {
+  uploadedFile = f;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    document.getElementById('preview-img').src = ev.target.result;
+    document.getElementById('preview-name').textContent = f.name;
+    document.getElementById('preview-size').textContent = (f.size/1024).toFixed(1)+' KB';
+    document.getElementById('upload-preview').classList.add('show');
+  };
+  reader.readAsDataURL(f);
+}
+
+function removeImage() { uploadedFile=null; fileInput.value=''; document.getElementById('upload-preview').classList.remove('show'); }
+
+// Severity
+const sevLabels = ['','Very Mild','Mild','Mild','Moderate','Moderate','Moderate','Noticeable','Severe','Very Severe','Critical'];
+const sevColors = ['','#5cb85c','#5cb85c','#5cb85c','#f5a623','#f5a623','#f5a623','#e87c2a','#e85959','#e85959','#c0392b'];
+
+function updateSeverity(v) {
+  v = parseInt(v);
+  document.getElementById('severity-num').textContent = v;
+  document.getElementById('severity-num').style.color = sevColors[v];
+  document.getElementById('severity-label').textContent = sevLabels[v];
+  [1,2,3,4].forEach(i => document.getElementById('face-'+i).classList.remove('active'));
+  const fi = v<=2?1:v<=5?2:v<=7?3:4;
+  document.getElementById('face-'+fi).classList.add('active');
+  const pct=((v-1)/9)*100;
+  document.getElementById('severity').style.background = `linear-gradient(to right,${sevColors[v]} 0%,${sevColors[v]} ${pct}%,#e2e8f0 ${pct}%,#e2e8f0 100%)`;
+}
+
+// Chat
+let conversationHistory = [];
+
+function buildSystemPrompt() {
+  const age = document.getElementById('age').value||'Not specified';
+  const gender = document.getElementById('gender').value||'Not specified';
+  const duration = document.getElementById('duration').value||'Not specified';
+  const severity = document.getElementById('severity').value;
+  const meds = document.getElementById('medications').value||'None';
+  const allergies = document.getElementById('allergies').value||'None';
+  const additional = document.getElementById('additional').value||'None';
+  const symptoms = selected.size ? [...selected].join(', ') : 'None selected';
+  return `You are MedCheck, a warm, friendly, and caring AI health assistant. Your audience includes women, children, elderly patients, and people who may not be medically literate. Always use simple, clear, and kind language. Never use jargon without explaining it in plain words.
+
+PATIENT INTAKE:
+- Age: ${age}
+- Gender: ${gender}
+- Symptom duration: ${duration}
+- Severity: ${severity}/10
+- Current medications: ${meds}
+- Known allergies: ${allergies}
+- Selected symptoms: ${symptoms}
+- Additional info: ${additional}
+${uploadedFile?`- Photo uploaded: ${uploadedFile.name}`:''}
+
+YOUR APPROACH:
+- Be warm, calm, and reassuring — never alarming
+- Use simple everyday language. No medical jargon without clear explanation
+- Suggest possible conditions clearly framed as possibilities, NOT a diagnosis
+- Clearly state when someone should see a doctor, urgent care, or call emergency services
+- If patient may be a child or elderly, gently suggest bringing a trusted adult or caregiver
+- Keep responses short and readable — no walls of text
+- ALWAYS end with a gentle reminder to consult a real doctor
+- Never diagnose. Never prescribe. Always care.`;
+}
+
+async function addMessage(role, content, isTyping=false) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = `msg msg-${role==='assistant'?'ai':'user'}`;
+  if (isTyping) {
+    div.innerHTML = `<div class="msg-name">🤖 MedCheck AI</div><div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  } else if (role==='assistant') {
+    div.innerHTML = `<div class="msg-name">🤖 MedCheck AI</div><div class="msg-bubble">${content}</div>`;
+  } else {
+    div.innerHTML = `<div class="msg-name">You</div><div class="msg-bubble">${content}</div>`;
+  }
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  await addMessage('user', text);
+  conversationHistory.push({role:'user',content:text});
+  const typingEl = await addMessage('assistant','',true);
+  try {
+    const res = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:buildSystemPrompt(),messages:conversationHistory})});
+    const data = await res.json();
+    const reply = data.content?.[0]?.text||'Sorry, I could not get a response. Please try again.';
+    typingEl.remove();
+    await addMessage('assistant', reply);
+    conversationHistory.push({role:'assistant',content:reply});
+  } catch {
+    typingEl.remove();
+    await addMessage('assistant','I\'m having trouble connecting right now. Please try again in a moment, or speak to a doctor directly.');
+  }
+}
+
+async function submitForm() {
+  const age = document.getElementById('age').value;
+  const gender = document.getElementById('gender').value;
+  const duration = document.getElementById('duration').value;
+  if (!age||!gender||!duration) { alert('Please fill in your Age, Gender, and how long you have had your symptoms before continuing.'); return; }
+  const chatPanel = document.getElementById('chat-panel');
+  chatPanel.classList.add('show');
+  setTimeout(()=>chatPanel.scrollIntoView({behavior:'smooth',block:'start'}),100);
+  conversationHistory = [];
+  const symptomList = selected.size ? [...selected].join(', ') : 'no specific symptoms selected';
+  const initMsg = `Hello! I am a ${age}-year-old ${gender}. I have been feeling unwell for ${duration} and my discomfort level is ${document.getElementById('severity').value} out of 10. My symptoms include: ${symptomList}. Can you help me understand what might be going on and what I should do?`;
+  conversationHistory.push({role:'user',content:initMsg});
+  const typingEl = await addMessage('assistant','',true);
+  try {
+    const res = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:buildSystemPrompt(),messages:conversationHistory})});
+    const data = await res.json();
+    const reply = data.content?.[0]?.text||'Hello! I\'ve reviewed your details. How can I help you today?';
+    typingEl.remove();
+    await addMessage('assistant', reply);
+    conversationHistory.push({role:'assistant',content:reply});
+  } catch {
+    typingEl.remove();
+    await addMessage('assistant','Hello! I\'ve received your details. Please describe how you\'re feeling and I\'ll do my best to help guide you. Remember — always consult a real doctor for proper care. 💙');
+  }
+}
+
+buildSymptomTags();
+updateSeverity(5);
+</script>
+</body>
+</html>
